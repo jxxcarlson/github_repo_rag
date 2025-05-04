@@ -1,85 +1,115 @@
-# GitHub Repository RAG MCP Server
+# 🚀 GitHub Repository RAG MCP Server
 
-This MCP (Model Context Protocol) server allows you to process GitHub repositories and ask questions about their codebase using RAG (Retrieval Augmented Generation).
+A powerful Model Context Protocol (MCP) server that enables natural language interaction with GitHub repositories using Retrieval-Augmented Generation (RAG). This tool makes codebases conversational by leveraging AST parsing, semantic embeddings, and natural language interfaces.
 
-## Installation
+## ✨ Features
 
-1. Install the Claude Desktop:
- - Claude Desktop
-  > ['Claude Desktop'](https://claude.ai/download) installed
+- **Multi-language Support**: Process TypeScript, JavaScript, and Python codebases
+- **Flexible Embeddings**: Choose between OpenAI, Hugging Face, or Xenova embeddings
+- **Seamless Integration**: Works with Claude Desktop, Cursor, VS Code, and other MCP clients
+- **Smart Chunking**: AST-powered semantic code chunking for better context
+- **Fast Search**: Local FAISS index for quick semantic search
+- **Natural Q&A**: Ask questions about your codebase in plain English
 
-## Configuration
+## 📋 Prerequisites
 
-1. Open VS Code to edit the Claude configuration:
-```bash
-code ~/Library/Application\ Support/Claude/claude_desktop_config.json
-```
+- Node.js (v14 or higher)
+- Python 3.x (for Python code support)
+- Git (for repository cloning)
+- Optional: API keys for OpenAI or Hugging Face (required for their respective embeddings)
 
-2. Add the following configuration to your `claude_desktop_config.json`:
-```json
+## 🛠️ Installation
 
-{
-  "mcpServers": {
-  "github_repo_rag_server": {
-    "command": "npx",
-    "args": ["-y", "github_repo_rag"]
-        }
-    }
-}
+1. Install Claude Desktop:
+   ```bash
+   # Follow instructions at https://github.com/jxnl/cluade-desktop
+   ```
 
-```
+2. Configure the MCP server:
+   ```bash
+   # Open VS Code with the config file
+   code ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   ```
 
-## Usage
+3. Add the MCP server configuration:
+   ```json
+   {
+     "mcpServers": {
+       "github_repo_rag_server": {
+         "command": "npx",
+         "args": ["-y", "github_repo_rag"],
+         "env": {
+           "OPENAI_API_KEY": "your_openai_key",
+           "HUGGINGFACE_API_KEY": "your_huggingface_key"
+         }
+       }
+     }
+   }
+   ```
+
+## 🚀 Usage
 
 ### Processing a Repository
 
-To process a GitHub repository, send the following message:
-```
-process repository https://github.com/yuvraj1898/AI-Github-Agent.git
+Use the following command in Claude Desktop or any compatible MCP client:
+
+```bash
+process repository https://github.com/owner/repo.git use openai embeddings
 ```
 
-This will:
+#### Embedding Options:
+- `use openai embeddings` - Use OpenAI's embedding models
+- `use huggingface` - Use Hugging Face's embedding models
+- Default: Xenova Transformers (no API key required)
+
+The process will:
 1. Clone the repository
-2. Extract code chunks (functions and classes)
-3. Create embeddings for the code
-4. Build a searchable index
+2. Parse files to extract functions and classes
+3. Create embeddings using your chosen model
+4. Build a local searchable FAISS index
 
 ### Asking Questions
 
-To ask questions about a processed repository, use the format:
-```
-question <your question> and next repo https://github.com/yuvraj1898/AI-Github-Agent.git
+Query your codebase using natural language:
 
-ex:tell me about summarize youtube transcript function repo AI summarizer
-```
-
-For example:
-```
-question How does the agent handle GitHub API authentication?  repo https://github.com/yuvraj1898/AI-Github-Agent.git
+```bash
+How does the agent handle GitHub API authentication? repo https://github.com/owner/repo.git
 ```
 
 The server will:
-1. Search the repository's index for relevant code
-2. Return the most relevant code snippets that answer your question
+1. Search the vector index for semantically relevant code
+2. Return context-rich answers with relevant functions and logic
 
-## Features
+## 🐛 Troubleshooting
 
-- Processes TypeScript/JavaScript and Python files
-- Extracts functions, classes, and their relationships
-- Creates semantic embeddings for code search
-- Supports natural language questions about code
-- Maintains a local index of processed repositories
+### Common Issues
 
-## Requirements
+| Issue | Solution |
+|-------|----------|
+| Invalid repo URL | Ensure the repository is public and the URL is correct |
+| Disk space issues | Check available space for cloning and indexing |
+| Missing dependencies | Verify Node.js, Python, and Git installations |
+| API key errors | Confirm correct API keys are set in environment variables |
 
-- Node.js (v14 or higher)
-- Python 3.x (for Python file processing)
-- Git (for repository cloning)
+### Debugging
 
-## Troubleshooting
+- Check console logs for detailed error messages and stack traces
+- Verify all required dependencies are installed
+- Ensure proper permissions for repository cloning and file access
 
-If you encounter any issues:
-1. Ensure the repository URL is correct and accessible
-2. Check that you have sufficient disk space for repository storage
-3. Verify that all required dependencies are installed
-4. Check the server logs for detailed error messages 
+## 📚 Additional Features
+
+- Automatic README summarization (when available)
+- Support for private repositories (with proper authentication)
+- Customizable chunking strategies
+- Configurable embedding models
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+

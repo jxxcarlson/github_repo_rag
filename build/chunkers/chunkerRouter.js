@@ -5,61 +5,35 @@ import { fileURLToPath } from 'url';
 import { chunkTSFile } from "./tsChunker.js";
 // Import the debugLogger
 import { debugLogger } from "../index.js";
-
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 export function chunkPyFile(filePath) {
-    try {
-        const currentFilePath = fileURLToPath(import.meta.url);
-        const currentDir = path.dirname(currentFilePath);
-        const scriptPath = path.join(currentDir, "py_ast_parser.py");
-        
-        debugLogger.log(`Current file path: ${currentFilePath}`);
-        debugLogger.log(`Current directory: ${currentDir}`);
-        debugLogger.log(`Python script path: ${scriptPath}`);
-        
-        if (!fs.existsSync(scriptPath)) {
-            throw new Error(`Python script not found at ${scriptPath}`);
-        }
-        
-        const result = spawnSync("python3", [scriptPath, filePath]);
-        
-        if (result.error) {
-            debugLogger.log(`Python script error: ${result.error}`);
-            throw result.error;
-        }
-        
-        // Log stderr for debugging but don't treat it as an error
-        if (result.stderr.length > 0) {
-            const stderr = result.stderr.toString();
-            debugLogger.log(`Python script debug output: ${stderr}`);
-        }
-        
-        const output = result.stdout.toString();
-        debugLogger.log(`Python script output: ${output}`);
-        
-        if (!output) {
-            throw new Error("No output from Python script");
-        }
-        
-        try {
-            const chunks = JSON.parse(output);
-            if (!Array.isArray(chunks)) {
-                throw new Error("Python script did not return an array of chunks");
-            }
-            debugLogger.log(`Successfully parsed ${chunks.length} chunks from Python script`);
-            return chunks;
-        } catch (parseError) {
-            debugLogger.log(`Error parsing Python script output: ${parseError}`);
-            throw new Error(`Failed to parse Python script output: ${parseError.message}`);
-        }
-    } catch (error) {
-        debugLogger.log(`Error in chunkPyFile: ${error}`);
-        if (error instanceof Error) {
-            debugLogger.log('Error stack:', error.stack);
-        }
-        throw error;
+    const scriptPath = path.join(__dirname, "py_ast_parser.py");
+    debugLogger.log(`Using Python parser script: ${scriptPath}`);
+    if (!fs.existsSync(scriptPath)) {
+        throw new Error(`Python parser script not found: ${scriptPath}`);
     }
+    const result = spawnSync("python3", [scriptPath, filePath]);
+    if (result.error)
+        throw result.error;
+    if (result.stderr.length > 0)
+        throw new Error(result.stderr.toString());
+    const pythonChunks = JSON.parse(result.stdout.toString());
+    debugLogger.log(`Found ${pythonChunks.length} Python chunks`);
+    // Convert Python chunks to CodeChunks
+    return pythonChunks.map(chunk => ({
+        type: chunk.type,
+        name: chunk.name,
+        code: chunk.code,
+        filePath: chunk.filePath,
+        startLine: chunk.startLine,
+        endLine: chunk.endLine,
+        language: "python",
+        calls: chunk.calls,
+        imports: chunk.imports
+    }));
 }
-
 export function chunkFileByExtension(filePath) {
     try {
         debugLogger.log(`Processing file: ${filePath}`);
@@ -107,7 +81,6 @@ export function chunkFileByExtension(filePath) {
         throw error;
     }
 }
-
 export function walkAndChunkDirectory(dirPath) {
     try {
         debugLogger.log(`Starting to walk directory: ${dirPath}`);
@@ -159,7 +132,6 @@ export function walkAndChunkDirectory(dirPath) {
                         if (err instanceof Error) {
                             debugLogger.log('Error stack:', err.stack);
                         }
-                        // Don't throw here, continue processing other files
                     }
                 }
                 else {
@@ -171,7 +143,6 @@ export function walkAndChunkDirectory(dirPath) {
                 if (err instanceof Error) {
                     debugLogger.log('Error stack:', err.stack);
                 }
-                // Don't throw here, continue processing other files
             }
         }
         debugLogger.log(`Total chunks collected: ${chunks.length}`);

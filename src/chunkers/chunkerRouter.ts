@@ -1,40 +1,90 @@
 import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from 'url';
 import { CodeChunk, chunkTSFile } from "./tsChunker.js";
 
 // Import the debugLogger
 import { debugLogger } from "../index.js";
 
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+interface PythonChunk {
+    type: "function" | "class";
+    name: string;
+    code: string;
+    filePath: string;
+    startLine: number;
+    endLine: number;
+    calls: string[];
+    imports: string[];
+}
+
 export function chunkPyFile(filePath: string): CodeChunk[] {
-    const scriptPath = path.resolve(__dirname, "py_ast_parser.py");
-    const result = spawnSync("python3", [scriptPath, filePath]);
+    const scriptPath = path.join(__dirname, "py_ast_parser.py");
+    debugLogger.log(`Using Python parser script: ${scriptPath}`);
+    
+    if (!fs.existsSync(scriptPath)) {
+        debugLogger.log(`Python parser script not found: ${scriptPath}`);
+        return [];
+    }
+    
+    try {
+        const result = spawnSync("python3", [scriptPath, filePath]);
+    
+        if (result.error) {
+            debugLogger.log(`Error running Python parser: ${result.error.message}`);
+            return [];
+        }
+        if (result.stderr.length > 0) {
+            debugLogger.log(`Python parser stderr: ${result.stderr.toString()}`);
+            return [];
+        }
+    
+        const pythonChunks: PythonChunk[] = JSON.parse(result.stdout.toString());
+        debugLogger.log(`Found ${pythonChunks.length} Python chunks`);
+        
+        // Convert Python chunks to CodeChunks
+        return pythonChunks.map(chunk => ({
+            type: chunk.type,
+            name: chunk.name,
+            code: chunk.code,
+            filePath: chunk.filePath,
+            startLine: chunk.startLine,
+            endLine: chunk.endLine,
+            language: "python",
+            calls: chunk.calls,
+            imports: chunk.imports
+        }));
+    } catch (error) {
+        debugLogger.log(`Error processing Python file: ${error}`);
+        return [];
+    }
+}
   
-    if (result.error) throw result.error;
-    if (result.stderr.length > 0) throw new Error(result.stderr.toString());
   
-    return JSON.parse(result.stdout.toString());
-  }
-  
-  
-  export function chunkFileByExtension(filePath: string): CodeChunk[] {
+export function chunkFileByExtension(filePath: string): CodeChunk[] {
     try {
       debugLogger.log(`Processing file: ${filePath}`);
       const ext = path.extname(filePath);
       debugLogger.log(`File extension: ${ext}`);
       
       if (!fs.existsSync(filePath)) {
-        throw new Error(`File does not exist: ${filePath}`);
+        debugLogger.log(`File does not exist: ${filePath}`);
+        return [];
       }
       
       const stats = fs.statSync(filePath);
       if (!stats.isFile()) {
-        throw new Error(`Path is not a file: ${filePath}`);
+        debugLogger.log(`Path is not a file: ${filePath}`);
+        return [];
       }
       
       debugLogger.log(`File size: ${stats.size} bytes`);
       
-      let chunks: CodeChunk[];
+      let chunks: CodeChunk[] = [];
       if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
         debugLogger.log('Processing TypeScript/JavaScript file');
         chunks = chunkTSFile(filePath);
@@ -43,12 +93,12 @@ export function chunkPyFile(filePath: string): CodeChunk[] {
         chunks = chunkPyFile(filePath);
       } else {
         debugLogger.log(`Unsupported file type: ${ext}`);
-        throw new Error(`Unsupported file type: ${ext}`);
+        return [];
       }
       
       if (!Array.isArray(chunks)) {
         debugLogger.log(`Invalid chunks type: ${typeof chunks}`);
-        throw new Error(`Expected chunks to be an array, got ${typeof chunks}`);
+        return [];
       }
       
       debugLogger.log(`Generated ${chunks.length} chunks for ${filePath}`);
@@ -60,14 +110,11 @@ export function chunkPyFile(filePath: string): CodeChunk[] {
       return chunks;
     } catch (error) {
       debugLogger.log(`Error in chunkFileByExtension for ${filePath}:`, error);
-      if (error instanceof Error) {
-        debugLogger.log('Error stack:', error.stack);
-      }
-      throw error;
+      return [];
     }
   }
   
-  export function walkAndChunkDirectory(dirPath: string): CodeChunk[] {
+export function walkAndChunkDirectory(dirPath: string): CodeChunk[] {
     try {
       debugLogger.log(`Starting to walk directory: ${dirPath}`);
       

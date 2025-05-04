@@ -12,6 +12,7 @@ class CodeChunkVisitor(ast.NodeVisitor):
     def __init__(self, source_code: str):
         self.source_code = source_code
         self.chunks = []
+        self.imports = []
 
     def extract_code(self, node: ast.AST) -> str:
         lines = self.source_code.splitlines()
@@ -35,13 +36,27 @@ class CodeChunkVisitor(ast.NodeVisitor):
         CallVisitor().visit(node)
         return calls
 
+    def visit_Import(self, node: ast.Import):
+        for name in node.names:
+            self.imports.append(name.name)
+            debug(f"Found import: {name.name}")
+
+    def visit_ImportFrom(self, node: ast.ImportFrom):
+        module = node.module or ""
+        for name in node.names:
+            self.imports.append(f"{module}.{name.name}")
+            debug(f"Found import from: {module}.{name.name}")
+
     def visit_FunctionDef(self, node: ast.FunctionDef):
         debug(f"Found function definition: {node.name}")
         self.chunks.append({
             "type": "function",
             "name": node.name,
             "code": self.extract_code(node),
+            "startLine": node.lineno,
+            "endLine": node.end_lineno,
             "calls": self.get_calls(node),
+            "imports": self.imports
         })
 
     def visit_ClassDef(self, node: ast.ClassDef):
@@ -50,7 +65,10 @@ class CodeChunkVisitor(ast.NodeVisitor):
             "type": "class",
             "name": node.name,
             "code": self.extract_code(node),
+            "startLine": node.lineno,
+            "endLine": node.end_lineno,
             "calls": self.get_calls(node),
+            "imports": self.imports
         })
 
 
@@ -83,7 +101,6 @@ if __name__ == "__main__":
         for chunk in chunks:
             chunk["filePath"] = file_path
             chunk["language"] = "python"
-            chunk["imports"] = []  # You can extract imports if needed
         print(json.dumps(chunks))
     except Exception as e:
         debug(f"Error: {str(e)}")

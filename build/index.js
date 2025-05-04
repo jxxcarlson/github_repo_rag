@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -113,16 +114,81 @@ async function extractRepositoryText(repoPath) {
     }
 }
 // Function to create embeddings
-async function createEmbeddings(texts) {
-    const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+async function createEmbeddings(texts, config = { provider: 'xenova' }) {
     const embeddings = [];
-    for (const text of texts) {
-        const output = await extractor(text, { pooling: 'mean', normalize: true });
-        // Convert DataArray to number[]
-        const embeddingArray = Array.from(output.data);
-        embeddings.push(embeddingArray);
+    const processedTexts = [];
+    // Helper function to chunk text based on token limit
+    const chunkText = (text, limit) => {
+        if (!limit)
+            return [text];
+        // Simple token estimation (4 chars per token on average)
+        const estimatedTokens = Math.ceil(text.length / 4);
+        if (estimatedTokens <= limit)
+            return [text];
+        // Split into chunks of approximately equal size
+        const numChunks = Math.ceil(estimatedTokens / limit);
+        const chunkSize = Math.ceil(text.length / numChunks);
+        const chunks = [];
+        for (let i = 0; i < text.length; i += chunkSize) {
+            chunks.push(text.slice(i, i + chunkSize));
+        }
+        return chunks;
+    };
+    switch (config.provider) {
+        case 'openai': {
+            const apiKey = process.env.OPENAI_API_KEY;
+            if (!apiKey)
+                throw new Error('OPENAI_API_KEY environment variable is required');
+            const { OpenAI } = await import('openai');
+            const openai = new OpenAI({ apiKey });
+            for (const text of texts) {
+                const chunks = chunkText(text, config.tokenLimit || 8000);
+                for (const chunk of chunks) {
+                    const response = await openai.embeddings.create({
+                        model: config.model || 'text-embedding-3-small',
+                        input: chunk,
+                    });
+                    embeddings.push(response.data[0].embedding);
+                    processedTexts.push(chunk);
+                }
+            }
+            break;
+        }
+        case 'huggingface': {
+            const apiKey = process.env.HUGGINGFACE_API_KEY;
+            if (!apiKey)
+                throw new Error('HUGGINGFACE_API_KEY environment variable is required');
+            const { HfInference } = await import('@huggingface/inference');
+            const hf = new HfInference(apiKey);
+            for (const text of texts) {
+                const chunks = chunkText(text, config.tokenLimit || 512);
+                for (const chunk of chunks) {
+                    const response = await hf.featureExtraction({
+                        model: config.model || 'sentence-transformers/all-MiniLM-L6-v2',
+                        inputs: chunk,
+                    });
+                    embeddings.push(response);
+                    processedTexts.push(chunk);
+                }
+            }
+            break;
+        }
+        case 'xenova':
+        default: {
+            const extractor = await pipeline('feature-extraction', config.model || 'Xenova/all-MiniLM-L6-v2');
+            for (const text of texts) {
+                const chunks = chunkText(text, config.tokenLimit || 512);
+                for (const chunk of chunks) {
+                    const output = await extractor(chunk, { pooling: 'mean', normalize: true });
+                    const embeddingArray = Array.from(output.data);
+                    embeddings.push(embeddingArray);
+                    processedTexts.push(chunk);
+                }
+            }
+            break;
+        }
     }
-    return { embeddings, texts };
+    return { embeddings, texts: processedTexts };
 }
 // Function to create and save FAISS index
 async function createFaissIndex(embeddings, texts, indexPath) {
@@ -241,7 +307,7 @@ export async function processRepository(config) {
             throw new Error('No text was extracted from the repository');
         }
         debug('Creating embeddings...');
-        const { embeddings, texts: processedTexts } = await createEmbeddings(texts);
+        const { embeddings, texts: processedTexts } = await createEmbeddings(texts, config.embeddingConfig);
         debug(`Created ${embeddings.length} embeddings`);
         debug('Creating FAISS index...');
         const indexPath = path.join(config.storagePath, 'index.faiss');
@@ -298,29 +364,31 @@ export const debugLogger = {
 // Add tool for processing repository
 server.tool("process-repository", "Process a GitHub repository for question answering", {
     repoUrl: z.string().describe("URL of the GitHub repository"),
-}, async ({ repoUrl }) => {
+    embeddingProvider: z.enum(['openai', 'huggingface', 'xenova']).optional().describe("Embedding provider to use"),
+    embeddingModel: z.string().optional().describe("Model to use for embeddings"),
+    tokenLimit: z.number().optional().describe("Maximum number of tokens per chunk")
+}, async ({ repoUrl, embeddingProvider, embeddingModel, tokenLimit }) => {
     try {
-        debugLogger.log('Received process-repository request for:', repoUrl);
         // Create the default storage directory if it doesn't exist
         if (!fs.existsSync(DEFAULT_STORAGE_PATH)) {
-            debugLogger.log('Creating default storage directory:', DEFAULT_STORAGE_PATH);
             fs.mkdirSync(DEFAULT_STORAGE_PATH, { recursive: true });
         }
         // Create a unique directory for this repository
         const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'repository';
         const repoStoragePath = path.join(DEFAULT_STORAGE_PATH, repoName);
-        debugLogger.log('Repository storage path:', repoStoragePath);
         if (fs.existsSync(repoStoragePath)) {
-            debugLogger.log('Removing existing repository directory');
             fs.rmSync(repoStoragePath, { recursive: true, force: true });
         }
-        debugLogger.log('Creating repository directory');
         fs.mkdirSync(repoStoragePath, { recursive: true });
         const indexPath = await processRepository({
             repoUrl,
-            storagePath: repoStoragePath
+            storagePath: repoStoragePath,
+            embeddingConfig: {
+                provider: embeddingProvider || 'xenova',
+                model: embeddingModel,
+                tokenLimit
+            }
         });
-        debugLogger.log('Repository processing completed successfully');
         return {
             content: [
                 {
@@ -331,22 +399,11 @@ server.tool("process-repository", "Process a GitHub repository for question answ
         };
     }
     catch (error) {
-        debugLogger.log('Error in process-repository tool:', error);
-        let errorMessage = 'Error processing repository: ';
-        if (error instanceof Error) {
-            errorMessage += error.message;
-            debugLogger.log('Error stack:', error.stack);
-        }
-        else {
-            errorMessage += String(error);
-        }
-        // Get the last 10 debug messages for context
-        const debugMessages = debugLogger.getLastMessages(10);
         return {
             content: [
                 {
                     type: "text",
-                    text: `${errorMessage}\n\nDebug information:\n${debugMessages.join('\n')}`,
+                    text: `Error processing repository: ${error.message}`,
                 },
             ],
         };

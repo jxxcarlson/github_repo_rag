@@ -60,7 +60,7 @@ const debugRepoHandler = async (req, res) => {
 // Process repository endpoint
 const processRepoHandler = async (req, res) => {
     try {
-        const { repoUrl } = req.body;
+        const { repoUrl, embeddingProvider } = req.body;
         if (!repoUrl) {
             res.status(400).json({ error: 'repoUrl is required' });
             return;
@@ -77,7 +77,8 @@ const processRepoHandler = async (req, res) => {
         // Process the repository
         const indexPath = await processRepository({
             repoUrl,
-            storagePath: repoStoragePath
+            storagePath: repoStoragePath,
+            embeddingProvider,
         });
         res.json({
             success: true,
