@@ -18,6 +18,24 @@ A powerful Model Context Protocol (MCP) server that enables natural language int
 - Git (for repository cloning)
 - Optional: API keys for OpenAI or Hugging Face (required for their respective embeddings)
 
+## 🔐 Environment Setup
+
+1. Create a `.env` file in the project root:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file with your API keys:
+   ```bash
+   # OpenAI API Key (required for OpenAI embeddings)
+   OPENAI_API_KEY=your_openai_api_key_here
+
+   # Hugging Face API Key (required for Hugging Face embeddings)
+   HUGGINGFACE_API_KEY=your_huggingface_api_key_here
+   ```
+
+   > ⚠️ **Important**: Never commit your `.env` file to version control. It's already in `.gitignore` to prevent accidental commits.
+
 ## 🛠️ Installation
 
 1. Install Claude Desktop:
@@ -90,12 +108,14 @@ The server will:
 | Disk space issues | Check available space for cloning and indexing |
 | Missing dependencies | Verify Node.js, Python, and Git installations |
 | API key errors | Confirm correct API keys are set in environment variables |
+| Push protection errors | Ensure no API keys are committed to the repository |
 
 ### Debugging
 
 - Check console logs for detailed error messages and stack traces
 - Verify all required dependencies are installed
 - Ensure proper permissions for repository cloning and file access
+- Verify environment variables are properly set
 
 ## 📚 Additional Features
 
@@ -107,6 +127,13 @@ The server will:
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Security Best Practices
+
+- Never commit API keys or sensitive information
+- Use environment variables for all sensitive data
+- Keep your `.env` file in `.gitignore`
+- Use `.env.example` as a template for required environment variables
 
 ## 📄 License
 
