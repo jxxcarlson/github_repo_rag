@@ -1,0 +1,39 @@
+{
+  "name": "github_repo_rag",
+  "version": "1.0.9",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "github_repo_rag": "bin/github_repo_rag.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js && mkdir -p bin && echo '#!/usr/bin/env node\nimport(\"../build/index.js\")' > bin/github_repo_rag.js && chmod 755 bin/github_repo_rag.js"
+  },
+  "files": [
+    "build",
+    "bin"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@babel/parser": "^7.27.0",
+    "@babel/traverse": "^7.27.0",
+    "@babel/types": "^7.27.0",
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@xenova/transformers": "^2.17.2",
+    "child_process": "^1.0.2",
+    "faiss-node": "^0.5.1",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
+    "simple-git": "^3.27.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.7",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.1",
+    "typescript": "^5.8.3"
+  }
+}
