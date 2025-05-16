@@ -39,6 +39,12 @@ at the added code, but maybe some of you can do that before I do.  Let's have at
 
    # Hugging Face API Key (required for Hugging Face embeddings)
    HUGGINGFACE_API_KEY=your_huggingface_api_key_here
+
+   # Optional: Custom port for the server (default: 3000)
+   PORT=3000
+
+   # Optional: Custom host for the server (default: localhost)
+   HOST=localhost
    ```
 
    > ⚠️ **Important**: Never commit your `.env` file to version control. It's already in `.gitignore` to prevent accidental commits.
