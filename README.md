@@ -4,8 +4,11 @@ A powerful Model Context Protocol (MCP) server that enables natural language int
 
 ## re Elm 
 
- This is a fork of the original, a first attempt (written by  Cursor and Claude) to add AST parsing for Elm.  I have not had a chance to run it, much less look
+This is a fork of the original, a first attempt (written by  Cursor and Claude) to add AST parsing for Elm.  I have not had a chance to run it, much less look
 at the added code, but maybe some of you can do that before I do.  Let's have at it!
+
+Please see discussion/ast_comments.txt for some comments on the format of the chunks
+created by parsing source code and to whom they are "fed." 
 
 ## ✨ Features
 
@@ -79,7 +82,7 @@ at the added code, but maybe some of you can do that before I do.  Let's have at
          "command": "npx",
          "args": ["-y", "github_repo_rag"],
          "env": {
-           "OPENAI_API_KEY": "your_openai_key",
+           "ANTRHOPIC_API_KEY": "your_openai_key",
            "HUGGINGFACE_API_KEY": "your_huggingface_key"
          }
        }
