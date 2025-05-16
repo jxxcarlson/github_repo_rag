@@ -4,7 +4,7 @@ A powerful Model Context Protocol (MCP) server that enables natural language int
 
 ## ✨ Features
 
-- **Multi-language Support**: Process TypeScript, JavaScript, and Python codebases
+- **Multi-language Support**: Process TypeScript, JavaScript, Python, and Elm codebases
 - **Flexible Embeddings**: Choose between OpenAI, Hugging Face, or Xenova embeddings
 - **Seamless Integration**: Works with Claude Desktop, Cursor, VS Code, and other MCP clients
 - **Smart Chunking**: AST-powered semantic code chunking for better context
@@ -15,6 +15,8 @@ A powerful Model Context Protocol (MCP) server that enables natural language int
 
 - Node.js (v14 or higher)
 - Python 3.x (for Python code support)
+- Elm 0.19.1 or higher (for Elm code support)
+- elm-ast-parser package (for Elm AST parsing)
 - Git (for repository cloning)
 - Optional: API keys for OpenAI or Hugging Face (required for their respective embeddings)
 
@@ -43,13 +45,22 @@ A powerful Model Context Protocol (MCP) server that enables natural language int
    # Follow instructions at https://github.com/jxnl/cluade-desktop
    ```
 
-2. Configure the MCP server:
+2. Install Elm and elm-ast-parser:
+   ```bash
+   # Install Elm
+   npm install -g elm
+
+   # Install elm-ast-parser
+   npm install -g elm-ast-parser
+   ```
+
+3. Configure the MCP server:
    ```bash
    # Open VS Code with the config file
    code ~/Library/Application\ Support/Claude/claude_desktop_config.json
    ```
 
-3. Add the MCP server configuration:
+4. Add the MCP server configuration:
    ```json
    {
      "mcpServers": {

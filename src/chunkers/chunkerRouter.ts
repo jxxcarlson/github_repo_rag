@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { CodeChunk, chunkTSFile } from "./tsChunker.js";
+import { chunkElmFile } from "./elmChunker.js";
 
 // Import the debugLogger
 import { debugLogger } from "../index.js";
@@ -91,6 +92,9 @@ export function chunkFileByExtension(filePath: string): CodeChunk[] {
       } else if (ext === ".py") {
         debugLogger.log('Processing Python file');
         chunks = chunkPyFile(filePath);
+      } else if (ext === ".elm") {
+        debugLogger.log('Processing Elm file');
+        chunks = chunkElmFile(filePath);
       } else {
         debugLogger.log(`Unsupported file type: ${ext}`);
         return [];
@@ -148,7 +152,7 @@ export function walkAndChunkDirectory(dirPath: string): CodeChunk[] {
               chunks = chunks.concat(subChunks);
               debugLogger.log(`Added ${subChunks.length} chunks from directory ${fullPath}`);
             }
-          } else if ([".ts", ".tsx", ".js", ".jsx", ".py"].includes(path.extname(fullPath))) {
+          } else if ([".ts", ".tsx", ".js", ".jsx", ".py", ".elm"].includes(path.extname(fullPath))) {
             debugLogger.log(`Processing supported file: ${fullPath}`);
             try {
               const fileChunks = chunkFileByExtension(fullPath);
@@ -182,7 +186,7 @@ export function walkAndChunkDirectory(dirPath: string): CodeChunk[] {
       debugLogger.log(`Total chunks collected: ${chunks.length}`);
       return chunks;
     } catch (error) {
-      debugLogger.log(`Error in walkAndChunkDirectory for ${dirPath}:`, error);
+      debugLogger.log(`Error in walkAndChunkDirectory: ${error}`);
       if (error instanceof Error) {
         debugLogger.log('Error stack:', error.stack);
       }
