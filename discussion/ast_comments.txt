@@ -1,4 +1,33 @@
+Question:
+So the output of py_ast_parser.py is consumed by pyChunker.ts. Is that correct? And what is the role of tsChunker.ts?
 
+Answer:
+Let me clarify the flow:
+
+1. **py_ast_parser.py** → **pyChunker.ts**:
+   - `py_ast_parser.py` produces a list of dictionaries (chunks) in Python
+   - `pyChunker.ts` is a TypeScript wrapper that:
+     - Calls the Python parser via a subprocess
+     - Converts the Python output into TypeScript objects
+     - Adds TypeScript-specific metadata
+
+2. **tsChunker.ts**:
+   - This is a separate chunker specifically for TypeScript/JavaScript files
+   - It uses TypeScript's own compiler API to parse TS/JS files
+   - It produces chunks in the same format as `pyChunker.ts` but for TypeScript code
+   - It's part of the multi-language support system
+
+3. **chunkerRouter.ts**:
+   - Acts as the central coordinator
+   - Routes files to the appropriate chunker based on file extension:
+     - `.py` files → `pyChunker.ts`
+     - `.ts`/`.js` files → `tsChunker.ts`
+     - `.elm` files → `elmChunker.ts`
+   - Standardizes the output format across all chunkers
+
+So while `pyChunker.ts` is specifically for Python files, `tsChunker.ts` handles TypeScript/JavaScript files, and both feed into the same system through the chunker router. This allows the system to process code from multiple languages while maintaining a consistent chunk format for downstream processing.
+
+##############################################################
 
 Question:
 Let's review. The python parser produces a bunch of python classes.
