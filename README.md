@@ -2,7 +2,9 @@
 
 A powerful Model Context Protocol (MCP) server that enables natural language interaction with GitHub repositories using Retrieval-Augmented Generation (RAG). This tool makes codebases conversational by leveraging AST parsing, semantic embeddings, and natural language interfaces.
 
-## NOTE.  This is a fork of the originas, a first attempt (written by  Cursor and Claude) to add AST parsing for Elm.  I have not had a chance to run it, much less look
+## NOTE. 
+
+ This is a fork of the originas, a first attempt (written by  Cursor and Claude) to add AST parsing for Elm.  I have not had a chance to run it, much less look
 at the added code, but maybe some of you can do that before I do.  Let's have at it!
 
 ## ✨ Features
