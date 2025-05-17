@@ -7,6 +7,10 @@ import Elm.Processing
 import Elm.Syntax.File
 import Elm.Syntax.Node
 import Elm.Syntax.Range
+import Elm.Syntax.Import
+import Elm.Syntax.Declaration
+import Elm.Syntax.Expression
+import Elm.Syntax.ModuleName
 import Platform
 import String
 
@@ -32,31 +36,45 @@ encodeChunk chunk =
         , ( "imports", Encode.list Encode.string chunk.imports )
         ]
 
+encodeResult : Result String (List Chunk) -> Encode.Value
+encodeResult result =
+    case result of
+        Ok chunks ->
+            Encode.object
+                [ ( "type", Encode.string "ok" )
+                , ( "value", Encode.list encodeChunk chunks )
+                ]
+        Err error ->
+            Encode.object
+                [ ( "type", Encode.string "error" )
+                , ( "error", Encode.string error )
+                ]
+
 parseElmFile : String -> Result String (List Chunk)
 parseElmFile source =
     case Elm.Parser.parse source of
         Ok rawFile ->
-
-
-            case Elm.Processing.process Elm.Processing.init rawFile of
-                Ok file ->
-                    Ok (extractChunks file)
-                Err _ ->
-                    Err "Failed to process Elm file"
+            let
+                file =
+                    Elm.Processing.process Elm.Processing.init rawFile
+            in
+            Ok (extractChunks source file)
         Err _ ->
             Err "Failed to parse Elm file"
 
-extractChunks : Elm.Syntax.File.File -> List Chunk
-extractChunks file =
+extractChunks : String -> Elm.Syntax.File.File -> List Chunk
+extractChunks source file =
     let
+        foo : List (Elm.Syntax.Node.Node Elm.Syntax.Import.Import)
+        foo = file.imports
         imports =
             List.map
                 (\imp ->
-                    case Elm.Syntax.Node.value imp of
-                        Elm.Syntax.File.Import { moduleName } ->
-                            String.join "." (List.map Elm.Syntax.Node.value moduleName)
-                        _ ->
-                            ""
+                    let
+                        importValue = Elm.Syntax.Node.value imp
+                        moduleNameNodes = Elm.Syntax.Node.value importValue.moduleName
+                    in
+                    String.join "." (List.map Elm.Syntax.Node.value moduleNameNodes)
                 )
                 file.imports
                 |> List.filter (\s -> s /= "")
@@ -64,10 +82,12 @@ extractChunks file =
     List.concatMap
         (\decl ->
             case Elm.Syntax.Node.value decl of
-                Elm.Syntax.File.FunctionDeclaration function ->
+                Elm.Syntax.Declaration.FunctionDeclaration function ->
                     let
+                        implementation =
+                            Elm.Syntax.Node.value function.declaration
                         name =
-                            Elm.Syntax.Node.value function.declaration.name
+                            Elm.Syntax.Node.value implementation.name
                         range =
                             Elm.Syntax.Node.range decl
                     in
@@ -80,7 +100,7 @@ extractChunks file =
                         []
                         imports
                     ]
-                Elm.Syntax.File.TypeAliasDeclaration typeAlias ->
+                Elm.Syntax.Declaration.AliasDeclaration typeAlias ->
                     let
                         name =
                             Elm.Syntax.Node.value typeAlias.name
@@ -96,7 +116,7 @@ extractChunks file =
                         []
                         imports
                     ]
-                Elm.Syntax.File.CustomTypeDeclaration typeDecl ->
+                Elm.Syntax.Declaration.CustomTypeDeclaration typeDecl ->
                     let
                         name =
                             Elm.Syntax.Node.value typeDecl.name
@@ -130,12 +150,15 @@ extractCode source range =
     String.join "\n" (List.drop startLine (List.take endLine lines))
 
 port parseFile : (String -> msg) -> Sub msg
-port parseResult : Result String (List Chunk) -> Cmd msg
+port parseResult : Encode.Value -> Cmd msg
 
-main : Program () () ()
+type alias Model = ()
+type alias Msg = Result String (List Chunk)
+
+main : Program () Model Msg
 main =
     Platform.worker
         { init = \_ -> ( (), Cmd.none )
-        , update = \_ msg -> ( (), parseResult msg )
+        , update = \msg _ -> ( (), parseResult (encodeResult msg) )
         , subscriptions = \_ -> parseFile parseElmFile
         } 
