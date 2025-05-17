@@ -1,15 +1,308 @@
 import json
 import sys
-from typing import List, Dict
+from typing import List, Dict, Optional
 import subprocess
 import tempfile
 import os
 
+class ElmParserError(Exception):
+    """Base exception for Elm parser errors"""
+    pass
+
+class FileReadError(ElmParserError):
+    """Raised when there's an error reading the Elm file"""
+    pass
+
+class ASTParseError(ElmParserError):
+    """Raised when there's an error parsing the AST"""
+    pass
+
+class SubprocessError(ElmParserError):
+    """Raised when there's an error running the elm-ast-parser subprocess"""
+    pass
+
 def debug(*args):
     print(*args, file=sys.stderr)
 
+class ElmCodeChunkVisitor:
+    def __init__(self, source_code: str):
+        self.source_code = source_code
+        self.chunks = []
+        self.imports = []
+        self.current_module = None
+
+    def visit_file(self, file_node: Dict):
+        """Visit the root File node"""
+        if not isinstance(file_node, dict):
+            raise ASTParseError("File node must be a dictionary")
+            
+        self.current_module = file_node.get('module', {}).get('name', '')
+        declarations = file_node.get('declarations', [])
+        
+        if not isinstance(declarations, list):
+            raise ASTParseError("Declarations must be a list")
+            
+        for declaration in declarations:
+            try:
+                self.visit_declaration(declaration)
+            except Exception as e:
+                debug(f"Error visiting declaration: {str(e)}")
+                continue
+
+    def visit_declaration(self, declaration_node: Dict):
+        """Visit a Declaration node"""
+        if not isinstance(declaration_node, dict):
+            raise ASTParseError("Declaration node must be a dictionary")
+            
+        decl_type = declaration_node.get('type')
+        if not decl_type:
+            raise ASTParseError("Declaration node missing 'type' field")
+            
+        try:
+            if decl_type == 'FunctionDeclaration':
+                self.visit_function(declaration_node)
+            elif decl_type == 'TypeAliasDeclaration':
+                self.visit_type_alias(declaration_node)
+            elif decl_type == 'CustomTypeDeclaration':
+                self.visit_custom_type(declaration_node)
+            elif decl_type == 'PortDeclaration':
+                self.visit_port(declaration_node)
+            elif decl_type == 'InfixDeclaration':
+                self.visit_infix(declaration_node)
+            elif decl_type == 'Destructuring':
+                self.visit_destructuring(declaration_node)
+            else:
+                debug(f"Unknown declaration type: {decl_type}")
+        except Exception as e:
+            debug(f"Error processing {decl_type}: {str(e)}")
+            raise
+
+    def visit_function(self, function_node: Dict):
+        """Visit a FunctionDeclaration node"""
+        if not isinstance(function_node, dict):
+            raise ASTParseError("Function node must be a dictionary")
+            
+        name = function_node.get('name')
+        if not name:
+            raise ASTParseError("Function node missing 'name' field")
+            
+        start_line = function_node.get('start', {}).get('line')
+        end_line = function_node.get('end', {}).get('line')
+        
+        if not start_line or not end_line:
+            raise ASTParseError("Function node missing line numbers")
+            
+        if start_line > end_line:
+            raise ASTParseError(f"Invalid line numbers: start ({start_line}) > end ({end_line})")
+
+        try:
+            self.chunks.append({
+                "type": "function",
+                "name": name,
+                "code": self.extract_code(function_node),
+                "startLine": start_line,
+                "endLine": end_line,
+                "calls": self.get_calls(function_node),
+                "imports": self.imports
+            })
+        except Exception as e:
+            debug(f"Error creating function chunk: {str(e)}")
+            raise
+
+    def visit_type_alias(self, type_node: Dict):
+        """Visit a TypeAliasDeclaration node"""
+        if not isinstance(type_node, dict):
+            raise ASTParseError("Type alias node must be a dictionary")
+            
+        name = type_node.get('name')
+        if not name:
+            raise ASTParseError("Type alias node missing 'name' field")
+            
+        start_line = type_node.get('start', {}).get('line')
+        end_line = type_node.get('end', {}).get('line')
+        
+        if not start_line or not end_line:
+            raise ASTParseError("Type alias node missing line numbers")
+            
+        if start_line > end_line:
+            raise ASTParseError(f"Invalid line numbers: start ({start_line}) > end ({end_line})")
+
+        try:
+            self.chunks.append({
+                "type": "class",
+                "name": name,
+                "code": self.extract_code(type_node),
+                "startLine": start_line,
+                "endLine": end_line,
+                "calls": [],
+                "imports": self.imports
+            })
+        except Exception as e:
+            debug(f"Error creating type alias chunk: {str(e)}")
+            raise
+
+    def visit_custom_type(self, type_node: Dict):
+        """Visit a CustomTypeDeclaration node"""
+        if not isinstance(type_node, dict):
+            raise ASTParseError("Custom type node must be a dictionary")
+            
+        name = type_node.get('name')
+        if not name:
+            raise ASTParseError("Custom type node missing 'name' field")
+            
+        start_line = type_node.get('start', {}).get('line')
+        end_line = type_node.get('end', {}).get('line')
+        
+        if not start_line or not end_line:
+            raise ASTParseError("Custom type node missing line numbers")
+            
+        if start_line > end_line:
+            raise ASTParseError(f"Invalid line numbers: start ({start_line}) > end ({end_line})")
+
+        try:
+            self.chunks.append({
+                "type": "class",
+                "name": name,
+                "code": self.extract_code(type_node),
+                "startLine": start_line,
+                "endLine": end_line,
+                "calls": [],
+                "imports": self.imports
+            })
+        except Exception as e:
+            debug(f"Error creating custom type chunk: {str(e)}")
+            raise
+
+    def visit_port(self, port_node: Dict):
+        """Visit a PortDeclaration node"""
+        if not isinstance(port_node, dict):
+            raise ASTParseError("Port node must be a dictionary")
+            
+        name = port_node.get('name')
+        if not name:
+            raise ASTParseError("Port node missing 'name' field")
+            
+        start_line = port_node.get('start', {}).get('line')
+        end_line = port_node.get('end', {}).get('line')
+        
+        if not start_line or not end_line:
+            raise ASTParseError("Port node missing line numbers")
+            
+        if start_line > end_line:
+            raise ASTParseError(f"Invalid line numbers: start ({start_line}) > end ({end_line})")
+
+        try:
+            self.chunks.append({
+                "type": "function",
+                "name": name,
+                "code": self.extract_code(port_node),
+                "startLine": start_line,
+                "endLine": end_line,
+                "calls": [],
+                "imports": self.imports
+            })
+        except Exception as e:
+            debug(f"Error creating port chunk: {str(e)}")
+            raise
+
+    def visit_infix(self, infix_node: Dict):
+        """Visit an InfixDeclaration node"""
+        # Infix operators are not tracked as chunks
+        pass
+
+    def visit_destructuring(self, destructuring_node: Dict):
+        """Visit a Destructuring node"""
+        # Destructuring is not tracked as a chunk
+        pass
+
+    def extract_code(self, node: Dict) -> str:
+        """Extract source code for a node"""
+        if not isinstance(node, dict):
+            raise ASTParseError("Node must be a dictionary")
+            
+        start_line = node.get('start', {}).get('line')
+        end_line = node.get('end', {}).get('line')
+        
+        if not start_line or not end_line:
+            raise ASTParseError("Node missing line numbers")
+            
+        if start_line > end_line:
+            raise ASTParseError(f"Invalid line numbers: start ({start_line}) > end ({end_line})")
+            
+        try:
+            lines = self.source_code.splitlines()
+            if start_line > len(lines) or end_line > len(lines):
+                raise ASTParseError(f"Line numbers out of range: {start_line}-{end_line} (file has {len(lines)} lines)")
+            return "\n".join(lines[start_line - 1:end_line])
+        except Exception as e:
+            debug(f"Error extracting code: {str(e)}")
+            raise
+
+    def get_calls(self, node: Dict) -> List[str]:
+        """Extract function calls from a node"""
+        if not isinstance(node, dict):
+            raise ASTParseError("Node must be a dictionary")
+            
+        calls = []
+        
+        def visit_application(app_node: Dict):
+            """Visit an Application node (function call)"""
+            if not isinstance(app_node, dict):
+                return
+                
+            function = app_node.get('function', {})
+            if function.get('type') == 'FunctionOrValue':
+                module = function.get('module', [])
+                name = function.get('name', '')
+                if module:
+                    calls.append(f"{'.'.join(module)}.{name}")
+                else:
+                    calls.append(name)
+
+        def visit_operator_application(op_node: Dict):
+            """Visit an OperatorApplication node"""
+            if not isinstance(op_node, dict):
+                return
+                
+            operator = op_node.get('operator', '')
+            if operator:
+                calls.append(operator)
+
+        def traverse(node: Dict):
+            """Traverse all nodes recursively"""
+            if not isinstance(node, dict):
+                return
+
+            node_type = node.get('type')
+            if node_type == 'Application':
+                visit_application(node)
+            elif node_type == 'OperatorApplication':
+                visit_operator_application(node)
+
+            # Recursively visit all values in the node
+            for value in node.values():
+                if isinstance(value, dict):
+                    traverse(value)
+                elif isinstance(value, list):
+                    for item in value:
+                        if isinstance(item, dict):
+                            traverse(item)
+
+        try:
+            traverse(node)
+            return calls
+        except Exception as e:
+            debug(f"Error getting calls: {str(e)}")
+            return []
+
 def parse_elm_file(file_path: str) -> List[Dict]:
+    """Parse an Elm file and return a list of code chunks"""
     debug(f"Reading Elm file: {file_path}")
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        raise FileReadError(f"File not found: {file_path}")
+        
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             source_code = f.read()
@@ -20,81 +313,51 @@ def parse_elm_file(file_path: str) -> List[Dict]:
                 temp.write(source_code)
                 temp_path = temp.name
 
-            # Use elm-ast-parser to parse the file
             try:
-                result = subprocess.run(
-                    ['elm-ast-parser', temp_path],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
+                # Use elm-ast-parser to parse the file
+                try:
+                    result = subprocess.run(
+                        ['elm-ast-parser', temp_path],
+                        capture_output=True,
+                        text=True,
+                        check=True
+                    )
+                except subprocess.CalledProcessError as e:
+                    raise SubprocessError(f"elm-ast-parser failed: {e.stderr}")
+                except FileNotFoundError:
+                    raise SubprocessError("elm-ast-parser not found. Please install it first.")
                 
                 # Parse the JSON output from elm-ast-parser
-                ast_data = json.loads(result.stdout)
-                chunks = []
+                try:
+                    ast_data = json.loads(result.stdout)
+                except json.JSONDecodeError as e:
+                    raise ASTParseError(f"Failed to parse AST JSON: {str(e)}")
                 
-                # Process the AST to extract functions and types
-                for node in ast_data:
-                    if node['type'] == 'FunctionDeclaration':
-                        chunks.append({
-                            'type': 'function',
-                            'name': node['name'],
-                            'code': source_code[node['start']['line']-1:node['end']['line']],
-                            'startLine': node['start']['line'],
-                            'endLine': node['end']['line'],
-                            'calls': extract_calls(node),
-                            'imports': extract_imports(ast_data)
-                        })
-                    elif node['type'] == 'TypeDeclaration':
-                        chunks.append({
-                            'type': 'class',
-                            'name': node['name'],
-                            'code': source_code[node['start']['line']-1:node['end']['line']],
-                            'startLine': node['start']['line'],
-                            'endLine': node['end']['line'],
-                            'calls': [],
-                            'imports': extract_imports(ast_data)
-                        })
+                # Create and use the visitor
+                visitor = ElmCodeChunkVisitor(source_code)
+                visitor.visit_file(ast_data)
                 
-                debug(f"Found {len(chunks)} chunks in {file_path}")
-                return chunks
+                debug(f"Found {len(visitor.chunks)} chunks in {file_path}")
+                return visitor.chunks
                 
             finally:
                 # Clean up the temporary file
-                os.unlink(temp_path)
+                try:
+                    os.unlink(temp_path)
+                except Exception as e:
+                    debug(f"Warning: Failed to delete temporary file {temp_path}: {str(e)}")
                 
     except Exception as e:
-        debug(f"Error parsing Elm file {file_path}: {str(e)}")
-        raise
-
-def extract_calls(node: Dict) -> List[str]:
-    calls = []
-    
-    def traverse(node):
-        if isinstance(node, dict):
-            if node.get('type') == 'FunctionCall':
-                if isinstance(node.get('function'), dict):
-                    calls.append(node['function'].get('name', ''))
-            for value in node.values():
-                traverse(value)
-        elif isinstance(node, list):
-            for item in node:
-                traverse(item)
-    
-    traverse(node)
-    return calls
-
-def extract_imports(ast_data: List[Dict]) -> List[str]:
-    imports = []
-    for node in ast_data:
-        if node['type'] == 'ImportDeclaration':
-            module_name = node.get('module', {}).get('name', '')
-            if module_name:
-                imports.append(module_name)
-    return imports
+        if isinstance(e, ElmParserError):
+            raise
+        raise FileReadError(f"Error reading Elm file {file_path}: {str(e)}")
 
 if __name__ == "__main__":
     try:
+        if len(sys.argv) != 2:
+            print("Usage: python elm_ast_parser.py <elm_file>", file=sys.stderr)
+            sys.exit(1)
+            
         file_path = sys.argv[1]
         debug(f"Processing file: {file_path}")
         chunks = parse_elm_file(file_path)
@@ -102,6 +365,9 @@ if __name__ == "__main__":
             chunk["filePath"] = file_path
             chunk["language"] = "elm"
         print(json.dumps(chunks))
-    except Exception as e:
+    except ElmParserError as e:
         debug(f"Error: {str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        debug(f"Unexpected error: {str(e)}")
         sys.exit(1) 
