@@ -1,6 +1,6 @@
 import express, { Request, Response, RequestHandler } from 'express';
-import { processRepository } from './index.js';
-import { debugLogger } from './index.js';
+import { processRepository } from './index';
+import { debugLogger } from './index';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';

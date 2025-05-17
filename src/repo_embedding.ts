@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import { z } from "zod";
 import fs from "fs";
 import { simpleGit } from 'simple-git';
@@ -8,8 +8,8 @@ import path from 'path';
 import { pipeline } from '@xenova/transformers';
 import faiss from 'faiss-node';
 import { createInterface } from 'readline';
-import { walkAndChunkDirectory } from './chunkers/chunkerRouter.js';
-import { CodeChunk } from './chunkers/tsChunker.js';
+import { walkAndChunkDirectory } from './chunkers/chunkerRouter';
+import { CodeChunk } from './chunkers/tsChunker';
 
 // Types
 interface RepositoryConfig {

@@ -1,10 +1,10 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { processRepository } from "./index.js";
+import { processRepository } from "./index";
 
 // Add debug logging function that uses stderr
 function debug(...args: any[]) {

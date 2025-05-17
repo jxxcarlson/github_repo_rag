@@ -1,16 +1,11 @@
 import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from 'url';
-import { CodeChunk, chunkTSFile } from "./tsChunker.js";
-import { chunkElmFile } from "./elmChunker.js";
+import { CodeChunk, chunkTSFile } from "./tsChunker";
+import { chunkElmFile } from "./elmChunker";
 
 // Import the debugLogger
-import { debugLogger } from "../index.js";
-
-// Get the directory name of the current module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { debugLogger } from "../index";
 
 interface PythonChunk {
     type: "function" | "class";

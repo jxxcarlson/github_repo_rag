@@ -2,12 +2,13 @@
   "name": "github_repo_rag",
   "version": "1.0.9",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "bin": {
     "github_repo_rag": "bin/github_repo_rag.js"
   },
   "scripts": {
-    "build": "tsc && chmod 755 build/index.js && mkdir -p bin && echo '#!/usr/bin/env node\nimport(\"../build/index.js\")' > bin/github_repo_rag.js && chmod 755 bin/github_repo_rag.js"
+    "build": "tsc && chmod 755 build/index.js && mkdir -p bin && echo '#!/usr/bin/env node\nrequire(\"../build/index.js\")' > bin/github_repo_rag.js && chmod 755 bin/github_repo_rag.js",
+    "test": "jest"
   },
   "files": [
     "build",
@@ -33,9 +34,18 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
+    "@jest/globals": "^29.5.0",
     "@types/babel__traverse": "^7.20.7",
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.14.1",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.5.0",
+    "jest-util": "^29.5.0",
+    "jest-worker": "^29.5.0",
+    "ts-jest": "^29.1.0",
     "typescript": "^5.8.3"
   }
 }

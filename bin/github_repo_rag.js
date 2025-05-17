@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-import("../build/index.js")
+require("../build/index.js")
