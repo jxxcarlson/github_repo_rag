@@ -1,4 +1,10 @@
-mprove chunk splitting: Instead of splitting by double newlines, use a parser-aware approach (e.g., split only at top-level declarations using regex for ^(\w+)\s*: or ^type\s+ etc.).
+# PROBLEM
+
+Running the chunker on even moderate-size files fails.  We've tried code splitting, e.g. the crude
+
+> improve chunk splitting: Instead of splitting by double newlines, use a parser-aware approach (e.g., split only at top-level declarations using regex for ^(\w+)\s*: or ^type\s+ etc.).
+
+but this is also porblematic.  Another way forward is to hack ethe Elm Compiler. I suggested this to Claude:
 
 ## Elm Compiler and AST in JSON Format
 
