@@ -4,7 +4,7 @@ import * as path from 'path';
 
 async function main() {
     try {
-        const filePath = path.resolve('src/elm/test.elm');
+        const filePath = '/Users/carlson/dev/elm-work/scripta/scripta-app/src/Frontend.elm';
         const chunks = await chunkElmFile(filePath, { log: console.log });
         console.log(JSON.stringify(chunks, null, 2));
     } catch (error) {
