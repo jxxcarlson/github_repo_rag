@@ -65,16 +65,22 @@ parseElmFile source =
 extractChunks : String -> Elm.Syntax.File.File -> List Chunk
 extractChunks source file =
     let
-        foo : List (Elm.Syntax.Node.Node Elm.Syntax.Import.Import)
-        foo = file.imports
+        imports : List String
         imports =
             List.map
                 (\imp ->
                     let
-                        importValue = Elm.Syntax.Node.value imp
-                        moduleNameNodes = Elm.Syntax.Node.value importValue.moduleName
+                        importValue : Elm.Syntax.Import.Import
+                        importValue =
+                            Elm.Syntax.Node.value imp
+                        moduleNameNode : Elm.Syntax.Node.Node Elm.Syntax.ModuleName.ModuleName
+                        moduleNameNode =
+                            importValue.moduleName
+                        moduleNameList : Elm.Syntax.ModuleName.ModuleName
+                        moduleNameList =
+                            Elm.Syntax.Node.value moduleNameNode
                     in
-                    String.join "." (List.map Elm.Syntax.Node.value moduleNameNodes)
+                    String.join "." moduleNameList
                 )
                 file.imports
                 |> List.filter (\s -> s /= "")
