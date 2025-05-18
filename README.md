@@ -15,6 +15,8 @@ e.g. `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
 
 (( Please let me know if you encounter problems running the above script.  This would mean I did get everything properly committed. ))
 
+[Medium.com article](https://medium.com/@pratiksworking/ask-code-anything-github-repo-rag-mcp-server-your-ai-powered-dev-assistant-6a39253798cd)
+
 ## ✨ Features
 
 - **Multi-language Support**: Process TypeScript, JavaScript, Python, and Elm codebases
