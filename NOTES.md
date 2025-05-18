@@ -4,7 +4,7 @@ Running the chunker on even moderate-size files fails.  We've tried code splitti
 
 > improve chunk splitting: Instead of splitting by double newlines, use a parser-aware approach (e.g., split only at top-level declarations using regex for ^(\w+)\s*: or ^type\s+ etc.).
 
-but this is also problematic.  Another way forward is to hack ethe Elm Compiler. I suggested this to Claude:
+but this is also problematic.  Another way forward is to hack the Elm Compiler. I suggested this to Claude:
 
 ## Elm Compiler and AST in JSON Format
 
