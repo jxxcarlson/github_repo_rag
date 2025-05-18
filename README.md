@@ -10,10 +10,20 @@ at the added code, but maybe some of you can do that before I do.  Let's have at
 Please see discussion/ast_comments.txt for some comments on the format of the chunks
 created by parsing source code and to whom they are "fed." 
 
-To test the integration (so far) of Elm support, tun `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>` from the root of this repo. 
-e.g. `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
+- To test the integration thus foar of Elm support, run the following from the root of the repo:
 
-(( Please let me know if you encounter problems running the above script.  This would mean I did get everything properly committed. ))
+- `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>`
+- `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
+- `npx ts-node src/test-elm-chunker.ts`
+
+The first two exercise `elmChunke.ts` which calls `elm_ast_parser.py` which calls `elm_parser.js`.
+The latter is derived from `ElmParser.elm` which in turn calls on the Javascript progam
+obatained by compilin the packaged `stil4m/elm-syntax`.
+
+The third script exercises an updated version of `chunkerRouter.ts` which can cnunk files of 
+Python code, TS code, or Elm code.
+
+(( Please let me know if you encounter problems running the above scripts.  This would mean I did get everything properly committed. ))
 
 ## ✨ Features
 
