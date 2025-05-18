@@ -13,6 +13,8 @@ created by parsing source code and to whom they are "fed."
 To test the integration (so far) of Elm support, tun `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>` from the root of this repo. 
 e.g. `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
 
+(( Please let me know if you encounter problems running the above script.  This would mean I did get everything properly committed. ))
+
 ## ✨ Features
 
 - **Multi-language Support**: Process TypeScript, JavaScript, Python, and Elm codebases
