@@ -71,7 +71,7 @@ extractChunks file =
                     [ Chunk
                         "function"
                         name
-                        (extractCode source range)
+                        (extractCode file.source range)
                         range.start.row
                         range.end.row
                         []
@@ -87,7 +87,7 @@ extractChunks file =
                     [ Chunk
                         "class"
                         name
-                        (extractCode source range)
+                        (extractCode file.source range)
                         range.start.row
                         range.end.row
                         []
@@ -103,7 +103,7 @@ extractChunks file =
                     [ Chunk
                         "class"
                         name
-                        (extractCode source range)
+                        (extractCode file.source range)
                         range.start.row
                         range.end.row
                         []

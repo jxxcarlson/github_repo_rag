@@ -314,31 +314,30 @@ def parse_elm_file(file_path: str) -> List[Dict]:
                 temp_path = temp.name
 
             try:
-                # Use elm-ast-parser to parse the file
+                # Use our Elm parser to parse the file
                 try:
                     result = subprocess.run(
-                        ['elm-ast-parser', temp_path],
+                        ['node', 'elm_parser.js', temp_path],
                         capture_output=True,
                         text=True,
                         check=True
                     )
                 except subprocess.CalledProcessError as e:
-                    raise SubprocessError(f"elm-ast-parser failed: {e.stderr}")
+                    raise SubprocessError(f"Elm parser failed: {e.stderr}")
                 except FileNotFoundError:
-                    raise SubprocessError("elm-ast-parser not found. Please install it first.")
+                    raise SubprocessError("Node.js not found. Please install it first.")
                 
-                # Parse the JSON output from elm-ast-parser
+                # Parse the JSON output from our parser
                 try:
-                    ast_data = json.loads(result.stdout)
+                    result_data = json.loads(result.stdout)
+                    if result_data.get('type') == 'error':
+                        raise ASTParseError(f"Failed to parse Elm file: {result_data.get('error')}")
+                    chunks = result_data.get('value', [])
                 except json.JSONDecodeError as e:
-                    raise ASTParseError(f"Failed to parse AST JSON: {str(e)}")
+                    raise ASTParseError(f"Failed to parse parser output: {str(e)}")
                 
-                # Create and use the visitor
-                visitor = ElmCodeChunkVisitor(source_code)
-                visitor.visit_file(ast_data)
-                
-                debug(f"Found {len(visitor.chunks)} chunks in {file_path}")
-                return visitor.chunks
+                debug(f"Found {len(chunks)} chunks in {file_path}")
+                return chunks
                 
             finally:
                 # Clean up the temporary file
