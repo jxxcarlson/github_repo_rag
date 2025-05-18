@@ -11,7 +11,9 @@ export function chunkElmFile(filePath: string, logger: { log: (message: string) 
       throw new Error(`Elm file does not exist: ${filePath}`);
     }
 
-    const scriptPath = path.resolve(__dirname, "elm_ast_parser.py");
+    // Get the directory where this script is located
+    const scriptDir = __dirname;
+    const scriptPath = path.join(scriptDir, "elm_ast_parser.py");
     logger.log(`Using Elm parser script: ${scriptPath}`);
     
     if (!fs.existsSync(scriptPath)) {
@@ -32,6 +34,7 @@ export function chunkElmFile(filePath: string, logger: { log: (message: string) 
     }
     
     logger.log(`Found ${chunks.length} chunks in Elm file`);
+    console.log('Chunks:', JSON.stringify(chunks, null, 2));
     return chunks;
   } catch (error) {
     logger.log(`Error in chunkElmFile for ${filePath}: ${error}`);
@@ -40,4 +43,17 @@ export function chunkElmFile(filePath: string, logger: { log: (message: string) 
     }
     throw error;
   }
+}
+
+// Test the chunkElmFile function if run directly
+if (require.main === module) {
+  const filePath = process.argv[2];
+  if (!filePath) {
+    console.error('Please provide an Elm file path');
+    process.exit(1);
+  }
+  // Resolve the file path relative to the current working directory
+  const absolutePath = path.resolve(process.cwd(), filePath);
+  console.log(`Testing chunkElmFile on ${absolutePath}`);
+  chunkElmFile(absolutePath, { log: console.log });
 } 

@@ -314,18 +314,15 @@ def parse_elm_file(file_path: str) -> List[Dict]:
                 temp_path = temp.name
 
             try:
-                # Use our Elm parser to parse the file
-                try:
-                    result = subprocess.run(
-                        ['node', 'elm_parser.js', temp_path],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                except subprocess.CalledProcessError as e:
-                    raise SubprocessError(f"Elm parser failed: {e.stderr}")
-                except FileNotFoundError:
-                    raise SubprocessError("Node.js not found. Please install it first.")
+                # Get the directory where this script is located
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                elm_parser_path = os.path.join(script_dir, 'elm_parser.js')
+                result = subprocess.run(
+                    ['node', elm_parser_path, temp_path],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
                 
                 # Parse the JSON output from our parser
                 try:

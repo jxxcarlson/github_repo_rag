@@ -10,6 +10,9 @@ at the added code, but maybe some of you can do that before I do.  Let's have at
 Please see discussion/ast_comments.txt for some comments on the format of the chunks
 created by parsing source code and to whom they are "fed." 
 
+To test the integration (so far) of Elm support, tun `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>` from the root of this repo. 
+e.g. `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
+
 ## ✨ Features
 
 - **Multi-language Support**: Process TypeScript, JavaScript, Python, and Elm codebases
