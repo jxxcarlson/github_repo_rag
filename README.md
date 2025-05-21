@@ -142,7 +142,7 @@ RAG Chunks: [
 ]
 ```
 
-*NOTE:* _I would have though there would be a call to `inc` listed, but I don't see one._
+*NOTE:* _I would have thought there would be a call to `inc` listed, but I don't see one._
 
 [Medium.com article](https://medium.com/@pratiksworking/ask-code-anything-github-repo-rag-mcp-server-your-ai-powered-dev-assistant-6a39253798cd)
 
