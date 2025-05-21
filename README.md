@@ -10,7 +10,7 @@ at the added code, but maybe some of you can do that before I do.  Let's have at
 Please see discussion/ast_comments.txt for some comments on the format of the chunks
 created by parsing source code and to whom they are "fed." 
 
-- To test the integration thus foar of Elm support, run the following from the root of the repo:
+- To test the integration thus for of Elm support, run the following from the root of the repo:
 
 - `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>`
 - `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
@@ -167,15 +167,6 @@ The server will:
 - Configurable embedding models
 
 ## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### Security Best Practices
-
-- Never commit API keys or sensitive information
-- Use environment variables for all sensitive data
-- Keep your `.env` file in `.gitignore`
-- Use `.env.example` as a template for required environment variables
 
 ## 📄 License
 
