@@ -1,29 +1,148 @@
 # 🚀 GitHub Repository RAG MCP Server
 
-A powerful Model Context Protocol (MCP) server that enables natural language interaction with GitHub repositories using Retrieval-Augmented Generation (RAG). This tool makes codebases conversational by leveraging AST parsing, semantic embeddings, and natural language interfaces.
+A powerful Model Context Protocol (MCP) server that enables natural 
+language interaction with GitHub repositories using Retrieval-Augmented Generation (RAG). 
+This tool makes codebases conversational by leveraging AST parsing, semantic embeddings, 
+and natural language interfaces.
 
 ## re Elm 
 
-This is a fork of the original, a first attempt (written by  Cursor and Claude) to add AST parsing for Elm.  I have not had a chance to run it, much less look
-at the added code, but maybe some of you can do that before I do.  Let's have at it!
+This is a second branch of my fork.  It has been modified to give JSON output whose elements look like
 
-Please see discussion/ast_comments.txt for some comments on the format of the chunks
-created by parsing source code and to whom they are "fed." 
+```
+{
+  "type": "function",                 // "function", "class", "module", etc.
+  "name": "inc",                     // Identifier
+  "code": "inc : Int -> Int\n...",   // The full code snippet
+  "language": "elm",                 // Code language
+  "filePath": "/path/to/file.elm",   // Absolute or relative path
+  "startLine": 10,
+  "endLine": 15,
+  "calls": ["add", "log"],           // Optional: function calls within the snippet
+  "imports": ["Html"],               // Optional: imported modules
+  "docstring": "Increments a number",// Optional: extracted comment or summary
+  "embedding": [0.123, -0.456, ...]  // Optional: precomputed vector embedding
+}
+```
 
-- To test the integration thus for of Elm support, run the following from the root of the repo:
+This is apparently what RAG servers expect.  Below are (1) an example program and (2) the output of `npx ts-node src/chunkers/elmChunker.ts src/elm/test2.elm`
 
-- `npx ts-node github_repo_rag/src/chunkers/elmChunker.ts <path-to-elm-file>`
-- `npx ts-node src/chunkers/elmChunker.ts src/elm/test.elm`
-- `npx ts-node src/test-elm-chunker.ts`
+### 1. Program
 
-The first two exercise `elmChunke.ts` which calls `elm_ast_parser.py` which calls `elm_parser.js`.
-The latter is derived from `ElmParser.elm` which in turn calls on the Javascript progam
-obatained by compilin the packaged `stil4m/elm-syntax`.
+```
+module Main exposing (main, inc, Maybe(..), Result(..))
 
-The third script exercises an updated version of `chunkerRouter.ts` which can cnunk files of 
-Python code, TS code, or Elm code.
+import Html exposing (text)
 
-(( Please let me know if you encounter problems running the above scripts.  This would mean I did get everything properly committed. ))
+type Maybe a
+    = Just a
+    | Nothing
+
+type Result error value
+    = Ok value
+    | Err error
+
+type Agent = Human String | AI String | Alien
+
+agent = AI "Claude"
+
+inc : Int -> Int
+inc x =
+    let
+        delta =
+            2
+    in
+    x + delta
+
+main : Html.Html msg
+main =
+    text (String.fromInt (inc 1))
+```
+
+### 2. Output of the tool
+
+```
+  github_repo_rag git:(ragChunker) npx ts-node src/chunkers/elmChunker.ts src/elm/test2.elm
+Testing chunkElmFile on /Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm
+Processing Elm file: /Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm
+Using Elm parser script: /Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/chunkers/elm_ast_parser.py
+Executing Elm parser...
+Parsing JSON result...
+Found 6 chunks in Elm file
+RAG Chunks: [
+  {
+    "type": "class",
+    "name": "Maybe",
+    "code": "type Maybe a\n    = Just a\n    | Nothing",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 5,
+    "endLine": 7,
+    "calls": [],
+    "imports": []
+  },
+  {
+    "type": "class",
+    "name": "Result",
+    "code": "type Result error value\n    = Ok value\n    | Err error",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 9,
+    "endLine": 11,
+    "calls": [],
+    "imports": []
+  },
+  {
+    "type": "class",
+    "name": "Agent",
+    "code": "type Agent = Human String | AI String | Alien",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 13,
+    "endLine": 13,
+    "calls": [],
+    "imports": []
+  },
+  {
+    "type": "function",
+    "name": "agent",
+    "code": "agent = AI \"Claude\"",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 15,
+    "endLine": 15,
+    "calls": [],
+    "imports": []
+  },
+  {
+    "type": "function",
+    "name": "inc",
+    "code": "inc : Int -> Int\ninc x =\n    let\n        delta =\n            2\n    in\n    x + delta",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 17,
+    "endLine": 23,
+    "calls": [],
+    "imports": []
+  },
+  {
+    "type": "function",
+    "name": "main",
+    "code": "main : Html.Html msg\nmain =\n    text (String.fromInt (inc 1))",
+    "language": "elm",
+    "filePath": "/Users/carlson/dev/llm-local/yuvraj1898/github_repo_rag/src/elm/test2.elm",
+    "startLine": 25,
+    "endLine": 27,
+    "calls": [
+      "text",
+      "fromInt"
+    ],
+    "imports": []
+  }
+]
+```
+
+
 
 [Medium.com article](https://medium.com/@pratiksworking/ask-code-anything-github-repo-rag-mcp-server-your-ai-powered-dev-assistant-6a39253798cd)
 
