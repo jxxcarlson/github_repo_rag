@@ -144,6 +144,8 @@ RAG Chunks: [
 
 *NOTE:* _I would have thought there would be a call to `inc` listed, but I don't see one._
 
+*NOTE:* _See also [Elm compiler mod](https://github.com/jxxcarlson/elm-compiler/blob/master/README.md) for another way of extractin AST info.
+
 [Medium.com article](https://medium.com/@pratiksworking/ask-code-anything-github-repo-rag-mcp-server-your-ai-powered-dev-assistant-6a39253798cd)
 
 ## ✨ Features
