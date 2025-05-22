@@ -24,5 +24,5 @@ inc x =
 
 main : Html.Html msg
 main =
-    text "Hello, World!!!" 
+    text (String.fromInt (inc 1))
 
